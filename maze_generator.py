@@ -235,7 +235,7 @@ def generate_perfect_maze(width: int, height: int, seed: int) -> List[List[Dict[
 def compute_corridor_widths(
     cells_x: int, cells_y: int
 ) -> Tuple[float, float, float]:
-    """Calculate the corridor width and offsets that pack the maze tightly."""
+    """Calculate the corridor width and useful offsets within the base."""
 
     inner_span = BASE_SIZE - 2 * OUTER_WALL_THICKNESS
     corridor_x = (
@@ -245,7 +245,10 @@ def compute_corridor_widths(
         inner_span - INNER_WALL_THICKNESS * max(cells_y - 1, 0)
     ) / cells_y
 
+    # Keep a uniform corridor width while honouring the requested ~0.03 m.
     corridor = min(corridor_x, corridor_y)
+    corridor = max(min(corridor, TARGET_CORRIDOR_WIDTH + 0.004), TARGET_CORRIDOR_WIDTH - 0.004)
+
     if corridor <= 0:
         raise ValueError("Corridor width calculation resulted in a non-positive value.")
 
@@ -277,10 +280,10 @@ def build_outer_structure(
     wall_z = BASE_THICKNESS + OUTER_WALL_HEIGHT / 2.0
     # North & South walls (parallel to X axis)
     for sign, suffix in ((1.0, "North"), (-1.0, "South")):
-        location = level_origin + Vector((0.0, sign * BASE_SIZE / 2.0, wall_z))
+        location = level_origin + Vector((0.0, sign * (BASE_SIZE - OUTER_WALL_THICKNESS) / 2.0, wall_z))
         create_cube(
             f"OuterWall_{suffix}",
-            Vector((BASE_SIZE + 2 * OUTER_WALL_THICKNESS, OUTER_WALL_THICKNESS, OUTER_WALL_HEIGHT)),
+            Vector((BASE_SIZE, OUTER_WALL_THICKNESS, OUTER_WALL_HEIGHT)),
             location,
             collection,
             wall_material,
@@ -288,10 +291,10 @@ def build_outer_structure(
 
     # East & West walls (parallel to Y axis)
     for sign, suffix in ((1.0, "East"), (-1.0, "West")):
-        location = level_origin + Vector((sign * BASE_SIZE / 2.0, 0.0, wall_z))
+        location = level_origin + Vector((sign * (BASE_SIZE - OUTER_WALL_THICKNESS) / 2.0, 0.0, wall_z))
         create_cube(
             f"OuterWall_{suffix}",
-            Vector((OUTER_WALL_THICKNESS, BASE_SIZE + 2 * OUTER_WALL_THICKNESS, OUTER_WALL_HEIGHT)),
+            Vector((OUTER_WALL_THICKNESS, BASE_SIZE - 2 * OUTER_WALL_THICKNESS, OUTER_WALL_HEIGHT)),
             location,
             collection,
             wall_material,
@@ -497,9 +500,9 @@ def main() -> None:
     # Prepare three difficulty tiers by varying cell counts and seeds.  The
     # offsets keep the mazes spatially separated inside the scene.
     level_specs = [
-        LevelSpec("Level 1", cell_count_x=8, cell_count_y=8, random_seed=21, offset=Vector((-0.5, 0.0, 0.0))),
-        LevelSpec("Level 2", cell_count_x=9, cell_count_y=9, random_seed=87, offset=Vector((0.0, 0.0, 0.0))),
-        LevelSpec("Level 3", cell_count_x=10, cell_count_y=10, random_seed=133, offset=Vector((0.5, 0.0, 0.0))),
+        LevelSpec("Level 1", cell_count_x=5, cell_count_y=5, random_seed=21, offset=Vector((-0.5, 0.0, 0.0))),
+        LevelSpec("Level 2", cell_count_x=7, cell_count_y=6, random_seed=87, offset=Vector((0.0, 0.0, 0.0))),
+        LevelSpec("Level 3", cell_count_x=9, cell_count_y=8, random_seed=133, offset=Vector((0.5, 0.0, 0.0))),
     ]
 
     for level in level_specs:
